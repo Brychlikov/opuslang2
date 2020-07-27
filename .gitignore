@@ -2,6 +2,7 @@
 Session.vim
 __pycache__/
 demo
+*_pretty.ol
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
