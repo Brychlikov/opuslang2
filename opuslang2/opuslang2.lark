@@ -1,5 +1,5 @@
 ?start: _NL* branch+
-//start: branch
+//start: test
 branch: branch_def branch_body
 
 branch_def: "open"            -> opening
@@ -15,8 +15,8 @@ bid_level: NUMBER suit
 
 bid_body: "{" test* "}" _NL*
 
-test: condition ["," condition]*  _NL*                     -> unprioritized
-    | condition ["," condition]* ";" "[" NUMBER "]"  _NL*  -> prioritized
+test: condition ("," condition)*  _NL*                     -> unprioritized
+    | condition ("," condition)* ";" "[" NUMBER "]"  _NL*  -> prioritized
 
 condition: range
     | logic_expr

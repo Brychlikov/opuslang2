@@ -8,13 +8,7 @@ _grammar_fname = _current_path.parent.joinpath("opuslang2.lark")
 # parser = Lark.open(_grammar_fname, parser='lalr', debug=True)
 parser = Lark.open(_grammar_fname, parser='earley', debug=True)
 
-test = """
-open {
-    1C {
-        13-14, 4+ C
-        15-16, 2+H
-    }
-}
+test = """$balance >= 1
 """
 
 test_test = """
@@ -37,8 +31,8 @@ open {
 }
 """
 
-# demo = open("../opuslang2-2.demo").read()
+demo = open("../blas.ol2").read()
 
-tree = parser.parse(test_test)
-# tree = parser.parse(test_test)
+# tree = parser.parse(demo)
+tree = parser.parse(demo)
 print(tree.pretty())
