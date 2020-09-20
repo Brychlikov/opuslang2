@@ -18,42 +18,42 @@ bid_body: "{" test* "}" _NL*
 test: condition ("," condition)*  _NL*                     -> unprioritized
     | condition ("," condition)* ";" "[" NUMBER "]"  _NL*  -> prioritized
 
-condition: range
+?condition: range -> point_range
     | logic_expr
     | count_expr
 
 range: NUMBER "-" NUMBER  -> range
-    | NUMBER "-"               -> upper_bound
-    | NUMBER "+"               -> lower_bound
-    | NUMBER "="               -> exact
+    | NUMBER "-"          -> or_fewer
+    | NUMBER "+"          -> or_more
+    | NUMBER "="          -> exact
 
 count_expr: range suit_expr
 
 
-suit_expr: trump_suit      -> suit
+?suit_expr: trump_suit
     | trump_suit "&" trump_suit  -> and_suit
     | trump_suit "|" trump_suit  -> or_suit
 
 
-logic_atom: "(" logic_expr ")"
+?logic_atom: "(" logic_expr ")"
 
-logic_expr: logic_atom
+?logic_expr: logic_atom
     | logic_expr logic_binary logic_expr   -> binary
     | logic_unary logic_atom               -> unary
     | num_atom cmp_op num_atom             -> cmp
 
-logic_binary: "and"                        -> and
-    | "or"                                 -> or
+?logic_binary: "and"                        -> and_op
+    | "or"                                 -> or_op
 
 logic_unary: "not"                         -> not
 
 // old style point expressions not supported yet
 // potential arithmetic goes here
-num_atom: NUMBER
+?num_atom: NUMBER
     | variable
     | suit_expr
 
-cmp_op: ">"
+!?cmp_op: ">"
     | ">="
     | "=="
     | "!="

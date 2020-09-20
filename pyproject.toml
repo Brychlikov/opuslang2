@@ -8,10 +8,14 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 lark-parser = "^0.9.0"
+opus = {path= "../OPUS"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.0.2"
 pytest-cov = "^2.10.1"
+pydot = "^1.4.1"
+hypothesis = {extras = ["lark"], version = "^5.35.3"}
+prettyprinter = "^0.18.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
