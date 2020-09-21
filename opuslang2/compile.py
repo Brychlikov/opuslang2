@@ -12,8 +12,9 @@ from lark import Transformer, v_args
 from opus.lang import ir
 from dataclasses import dataclass, field
 
+import random
 
-@dataclass
+@dataclass(frozen=True, order=True)
 class Bid:
     level: int
     color: ir.Suit
@@ -71,6 +72,23 @@ class Branch:
     prefix: BidHistory
     continuations: List[BidExpression]
     meta: Optional[Any] = field(repr=False)
+
+    def all_conditions_sorted(self):
+        to_sort = []
+        for bid_expr in self.continuations:
+            for cond in bid_expr.conditions:
+                # abusing tuple sort very, very hard
+                # the correct sort order is by priority, ascending; then by suit, descending
+                # Suit compare can't be flipped, so we flip the priority order, then reverse whole list
+                num_val = -cond.priority if cond.priority is not None else -999_999
+
+                # Comparison between conditions is undefined
+                # To work around it we add a random uniquifier to comparing tuple
+
+                uniquifier = random.randrange(999999999999)
+                to_sort.append((num_val, bid_expr.prefix, uniquifier, cond))
+        to_sort.sort(reverse=True)
+        return ((c, bid) for _, bid, _,  c in to_sort)
 
 
 @dataclass
@@ -324,18 +342,37 @@ def _find(iterable, predicate, default=placeholder):
     raise ValueError("No item matched the supplied predicate")
 
 
-def build_branch(branch: Branch, rest: List[Branch]):
+def build_branch(branch: Branch, rest: List[Branch]) -> List[ir.Branch]:
     continuation_dict = {}
 
     for continuation_bid in branch.continuations:
-        continuation_branch = _find(rest, lambda b: b.prefix == branch.prefix + continuation_bid.prefix)
-        compiled = build_branch(continuation_branch, rest)
-        continuation_dict[continuation_bid.prefix] = compiled
+        continuation_branch = _find(rest, lambda b: b.prefix == branch.prefix + continuation_bid.prefix, None)
+        if continuation_branch is not None:
+            compiled = build_branch(continuation_branch, rest)
+            continuation_dict[continuation_bid.prefix] = compiled
+        else:
+            continuation_dict[continuation_bid.prefix] = []
+
+    result = []
+
+    for condition, bid in branch.all_conditions_sorted():
+        new_branch = ir.Branch(
+            # Branches may be shared. Closest equivalent of ir.Branch is List[BranchExpr] but no way to get that now
+            meta=condition.meta,
+            test=condition.expr,
+            bids=[ir.BidStatement(bid.meta, bid.level, bid.color)],
+            children=continuation_dict[bid],
+            end=None  # TODO add end markers
+        )
+        result.append(new_branch)
+
+    return result
 
 
 if __name__ == '__main__':
     test = open('../blas.ol2').read()
+
     tree = parser.parse(test)
     res = CompileTransformer().transform(tree)
     from prettyprinter import pprint
-    pprint(build_prefix(BidHistory([]), res))
+    pprint(build_branch(res[0], res))
