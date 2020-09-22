@@ -5,7 +5,7 @@ branch: branch_def branch_body
 branch_def: "open"            -> opening
     | bid_def ("-" bid_def)* -> continuation
 
-branch_body: "{" bid+ _NL* "}" _NL*
+branch_body: "{" _NL* bid+ _NL* "}" _NL*
 bid: bid_def bid_body
 
 bid_def: bid_level
@@ -13,7 +13,7 @@ bid_def: bid_level
 //bid_level: /[1-7]/ suit
 bid_level: NUMBER suit
 
-bid_body: "{" test* "}" _NL*
+bid_body: "{" _NL* test* "}" _NL*
 
 test: condition ("," condition)*  _NL*                     -> unprioritized
     | condition ("," condition)* ";" "[" NUMBER "]"  _NL*  -> prioritized
@@ -84,7 +84,7 @@ SPADES: "♠" | "S"
 NOTRUMP: "NT"
 
 %import common.CNAME  -> NAME
-%import common.NUMBER
+%import common.SIGNED_INT -> NUMBER
 %import common.WS_INLINE
 %ignore WS_INLINE
 %import common.WS
