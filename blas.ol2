@@ -1,9 +1,9 @@
 open {
 
     1C  {
-        12-14, $balance >= 1; [1]
+        12-14, $balance >= 1
         18-19, $balance >= 1
-        12-21, 4+ C;          [1]
+        12-21, 4+ C
     }
 
     1C  {
@@ -51,9 +51,47 @@ open {
         20-21, $balance >= 1
     }
 
+    3C {
+        5-9, 7= C
+    }
+
+    3D {
+        5-9, 7= D
+    }
+
+    3H {
+        5-9, 7= H
+    }
+
+    3S {
+        5-9, 7= S
+    }
+
+    3NT {
+        # Gambling??
+    }
+
+    4C {
+        5-9, 8+ C
+    }
+
+    4D {
+        5-9, 8+ D
+    }
+
+    4H {
+        5-9, 8+ H
+    }
+
+    4S {
+        5-9, 8+ S
+    }
+
+
+
 }
 
-1NT -2NT - 3NT {
+1NT {
 
     2C {
         8+, H|S == 4
@@ -63,10 +101,182 @@ open {
     }
 
     2D {
-        5+ H
+        5+ H; [20]  # nic więcej?
     }
 
+    2H {
+        5+ S; [10]  # serio nic?
+    }
 
+    2S {
+        8-9
+        6+ C
+    }
+
+    2NT {
+        5+ C&D, 0-7    # serio tak?
+        5+ C&D, 10-40  # chyba poważnie potrzeba pozwolić na mieszanie range z logic_expr
+                       # niemożliwe, to musi być artefakt braku priorytetów
+    }
+
+    3C {
+        6+ D
+    }
+
+    3D {
+        10+, 3= H|S, $balance == 0
+    }
+
+    3H {
+        10+, $counts == 5431, 1= H, 3= S
+    }
+
+    3S {
+        10+, $counts == 5431, 3= H, 1= S
+    }
+
+    3NT {
+        10-15;    [-1]    # ujemne priorytety chyba są ok?
+    }
+
+    # Strefa trasferów i teksasów
+    # smoki
+
+
+    4NT {
+        16-17
+    }
+
+    5NT {
+        19-20
+    }
+
+    6NT {
+        18=
+    }
+
+    # gdzie są pasy?
+    # czy pas jest zawsze implicite z priorytetem [-inf] ?
+    # jak odróżniać pas od GF?
+}
+
+
+1NT - 2C {
+
+    2D {
+        3- H&S
+    }
+
+    2H {
+        4= H
+    }
+
+    2S {
+        4= S
+    }
+}
+
+1NT - 2C - 2D {
+    2H {
+        # pas w domysle?
+
+        7-, H > S
+        # nie ma jeszcze wsparcia dla punktów w kolorze
+        # 7-, H == S, Hpoints > Spoints; [10]
+    }
+
+    2S {
+        # pas w domysle?
+
+        7-, H >= S; [20]
+    }
+
+    2NT {
+        # brakuje end
+        10-
+    }
+
+    3C {
+        # brakuje end
+        10+, 5+ C
+    }
+
+    3D {
+        # brakuje end
+        10+, 5+ D
+    }
+
+    3H {
+        # brakuje end
+        10+, 5+ S, 4+ H
+    }
+
+    3S {
+        # brakuje end
+        10+, 4+ S, 5+ H
+    }
+
+    3NT {
+        # hmmmmmm wygląda znajomo
+        2 == 2;  [-1]
+    }
+}
+
+1NT - 2C - 2H {
+
+    2S {
+        10+, 5+ C
+    }
+
+    2NT {
+        # sprzeczność między markdownem a blas.ol ?
+        # brakuje end?
+        # 9-10, 3- H
+        9-10;          [20]
+    }
+
+    3C {
+        # brakuje end?
+        10+, 5+ D
+    }
+
+    3D {
+        # brakuje end?
+        16+, 4+ H
+    }
+
+    3H {
+        9-10; 4= H;    [10]
+    }
+
+    3NT {
+        10+;           [-1]
+    }
 
 }
 
+1NT - 2C - 2S {
+    2NT {
+        9-10;          [20]
+    }
+
+    3C {
+        10+, 5+ C
+    }
+
+    3D {
+        10+, 5+ D
+    }
+
+    3H {
+        16+, 4+ S
+    }
+
+    3S {
+        9-10, 4+ S;    [10]
+    }
+
+    3NT {
+        10+;           [-1]
+    }
+}
