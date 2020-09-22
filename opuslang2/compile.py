@@ -9,6 +9,7 @@ from typing import Optional, Any, List
 
 from opuslang2.parser import parser
 from lark import Transformer, v_args
+import lark
 from opus.lang import ir
 from dataclasses import dataclass, field
 
@@ -210,6 +211,20 @@ class CompileTransformer(Transformer):
                 meta,
                 val,
                 ">=",
+                lower
+            )
+            return lower_expr
+
+        return f
+
+    @staticmethod
+    @meta_kw
+    def exact(lower, meta=None):
+        def f(val):
+            lower_expr = ir.BinaryExpr(
+                meta,
+                val,
+                "==",
                 lower
             )
             return lower_expr
