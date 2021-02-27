@@ -214,6 +214,7 @@ open {
     3S {
         # brakuje end
         10+, 4+ S, 5+ H
+        # 9+, 5+ H  # TEST TODO: REMOVE
     }
 
     3NT {

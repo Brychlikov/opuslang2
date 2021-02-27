@@ -13,12 +13,14 @@ import lark
 from opus.lang import ir
 from dataclasses import dataclass, field
 
+from opus.analyzer.spaces import IRSpace
 import random
+
 
 @dataclass(frozen=True, order=True)
 class Bid:
     level: int
-    color: ir.Suit
+    color: Optional[ir.Suit]
     meta: Optional[Any] = field(repr=False, compare=False)  # Skip meta in repr, cmp and hash
 
     @classmethod
@@ -26,6 +28,9 @@ class Bid:
         level = int(s[0])
         suit = ir.Suit(None, s[1:])
         return Bid(level, suit, None)
+
+    def is_pass(self):
+        return self.level == 0 and self.color is None
 
 
 def _is_prefix(p, l):
@@ -339,6 +344,7 @@ class CompileTransformer(Transformer):
         return children
 
     trump_suit = ir.Suit
+    pass_bid = partial(Bid, 0, None)
     suit = ir.Suit
 
     NUMBER = int
@@ -370,12 +376,22 @@ def build_branch(branch: Branch, rest: List[Branch]) -> List[ir.Branch]:
 
     result = []
 
-    for condition, bid in branch.all_conditions_sorted():
+    sorted_conditions = list(branch.all_conditions_sorted())
+    space = make_condition_space([entry[0] for entry in sorted_conditions])
+    if space.possible():
+        print("WARNING: ambiguity in branch", branch.prefix)
+        print("Branch intersection:", space)
+
+    for condition, bid in sorted_conditions:
+        if bid.is_pass():
+            ir_bid = ir.BidStatement(bid.meta, 0, None)
+        else:
+            ir_bid = ir.BidStatement(bid.meta, bid.level, bid.color)
         new_branch = ir.Branch(
             # Branches may be shared. Closest equivalent of ir.Branch is List[BranchExpr] but no way to get that now
             meta=condition.meta,
             test=condition.expr,
-            bids=[ir.BidStatement(bid.meta, bid.level, bid.color)],
+            bids=[ir_bid],
             children=continuation_dict[bid],
             end=None  # TODO add end markers
         )
@@ -384,10 +400,37 @@ def build_branch(branch: Branch, rest: List[Branch]) -> List[ir.Branch]:
     return result
 
 
+def make_condition_space(conditions: List[Condition]) -> IRSpace:
+    space = IRSpace()
+    for c in conditions:
+        space.apply_expr(c.expr)
+
+    print("conditions finish")
+    return space
+
+
+
+
 if __name__ == '__main__':
     test = open('../blas.ol2').read()
 
+    test2 = """
+    open {
+        1NT {
+            10-15, 4+ H
+            16-20, 3- H&S 
+        }
+    }
+
+    """
+
     tree = parser.parse(test)
     res = CompileTransformer().transform(tree)
+    if not hasattr(res, "__iter__"):
+        res = [res]
     from prettyprinter import pprint
-    pprint(build_branch(res[0], res))
+    compiled = build_branch(res[0], res)
+    pprint(compiled)
+    # conditions = res[0].continuations[0].conditions
+    # print(make_condition_space(conditions).possible)
+    print("done")

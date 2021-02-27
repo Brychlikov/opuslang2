@@ -5,13 +5,14 @@ branch: branch_def branch_body
 branch_def: "open"            -> opening
     | bid_def ("-" bid_def)* -> continuation
 
-branch_body: "{" _NL* bid+ _NL* "}" _NL*
+branch_body: "{" _NL* bid* _NL* "}" _NL*
 bid: bid_def bid_body
 
 bid_def: bid_level
 
 //bid_level: /[1-7]/ suit
-bid_level: NUMBER suit
+bid_level: NUMBER suit -> bid_level
+    | "pass"           -> pass_bid
 
 bid_body: "{" _NL* test* "}" _NL*
 
