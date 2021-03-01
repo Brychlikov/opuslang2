@@ -2,6 +2,7 @@ from lark import Lark
 from pathlib import Path
 
 from opuslang2.parser import parser
+from .compile import *
 
 
 if __name__ == '__main__':

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import prettyprinter
-prettyprinter.install_extras(['dataclasses'])
+if __name__ == "__main__":
+    import prettyprinter
+    prettyprinter.install_extras(['dataclasses'])
 
 from copy import deepcopy
 from functools import partial, reduce
@@ -32,6 +33,12 @@ class Bid:
     def is_pass(self):
         return self.level == 0 and self.color is None
 
+    @classmethod
+    def convert_level_constructor(cls, *args, **kwargs):
+        args = list(args)
+        args[0] = int(args[0])
+        return cls(*args, **kwargs)
+
 
 def _is_prefix(p, l):
     for prefix_el, list_el in zip(p, l):
@@ -43,7 +50,7 @@ def _is_prefix(p, l):
 @dataclass
 class BidHistory:
     sequence: List[Bid]
-    meta: Optional[Any] = field(repr=False, default=None)
+    meta: Optional[Any] = field(repr=False, default=None, compare=False)
 
     def __contains__(self, item):
         if isinstance(item, BidHistory):
@@ -86,7 +93,7 @@ class Branch:
                 # abusing tuple sort very, very hard
                 # the correct sort order is by priority, ascending; then by suit, descending
                 # Suit compare can't be flipped, so we flip the priority order, then reverse whole list
-                num_val = -cond.priority if cond.priority is not None else -999_999
+                num_val = -int(cond.priority) if cond.priority is not None else -999_999
 
                 # Comparison between conditions is undefined
                 # To work around it we add a random uniquifier to comparing tuple
@@ -118,16 +125,16 @@ class LogicSuit:
         if isinstance(logic_suit := getattr(expr.lhs, "child", None), LogicSuit):
             variant1 = deepcopy(expr)
             variant2 = deepcopy(expr)
-            variant1.lhs = logic_suit.lhs
-            variant2.lhs = logic_suit.rhs
+            variant1.lhs.child = logic_suit.lhs
+            variant2.lhs.child = logic_suit.rhs
 
             return ir.BinaryExpr(expr.meta, variant1, logic_suit.type, variant2)
 
         elif isinstance(getattr(expr.rhs, "child", None), LogicSuit):
             variant1 = deepcopy(expr)
             variant2 = deepcopy(expr)
-            variant1.lhs = logic_suit.lhs
-            variant2.lhs = logic_suit.rhs
+            variant1.lhs.child = logic_suit.lhs
+            variant2.lhs.child = logic_suit.rhs
 
             return ir.BinaryExpr(expr.meta, variant1, logic_suit.type, variant2)
         else:
@@ -255,17 +262,19 @@ class CompileTransformer(Transformer):
     @staticmethod
     @meta_kw
     def count_expr(range_gen, suit, meta=None):
-        return LogicSuit.resolve_logical_suits(range_gen(ir.Atom("SUIT_CARDS", meta, suit)))
+        if not isinstance(suit, ir.Atom):
+            suit = ir.Atom("SUIT_CARDS", meta, suit)
+        return LogicSuit.resolve_logical_suits(range_gen(suit))
 
     @staticmethod
     @meta_kw
     def and_suit(lhs, rhs, meta=None):
-        return LogicSuit("and", lhs, rhs, meta=meta)
+        return ir.Atom("SUIT_CARDS", meta, LogicSuit("and", lhs, rhs, meta=meta))
 
     @staticmethod
     @meta_kw
     def or_suit(lhs, rhs, meta=None):
-        return LogicSuit("or", lhs, rhs, meta=meta)
+        return ir.Atom("SUIT_CARDS", meta, LogicSuit("or", lhs, rhs, meta=meta))
 
     @staticmethod
     @meta_kw
@@ -306,7 +315,8 @@ class CompileTransformer(Transformer):
     @staticmethod
     @meta_kw
     def bid_level(*args, meta=None):
-        return Bid(*args, meta)
+        # return Bid(*args, meta)
+        return Bid.convert_level_constructor(*args, meta)
 
     @staticmethod
     @meta_kw
@@ -326,7 +336,7 @@ class CompileTransformer(Transformer):
     @staticmethod
     @meta_kw
     def continuation(*children, meta=None):
-        return BidHistory(children, meta=None)
+        return BidHistory(list(children), meta=None)
 
     @staticmethod
     @meta_kw
@@ -347,7 +357,13 @@ class CompileTransformer(Transformer):
     pass_bid = partial(Bid, 0, None)
     suit = ir.Suit
 
-    NUMBER = int
+    # NUMBER = partial(ir.Atom, "LITERAL")
+    @staticmethod
+    def NUMBER(*args, meta=None):
+        # print("UWAGA:", args)
+        child = args[0]
+        return ir.Atom("LITERAL", meta, child)
+
     variable = partial(ir.Atom, "VAR")
 
 
@@ -377,10 +393,13 @@ def build_branch(branch: Branch, rest: List[Branch]) -> List[ir.Branch]:
     result = []
 
     sorted_conditions = list(branch.all_conditions_sorted())
-    space = make_condition_space([entry[0] for entry in sorted_conditions])
-    if space.possible():
-        print("WARNING: ambiguity in branch", branch.prefix)
-        print("Branch intersection:", space)
+
+    # This piece of code modifies sorted_conditions for some reason
+    # in theory, this should use possibility spaces to check for ambiguities in the system
+    # space = make_condition_space([entry[0] for entry in sorted_conditions])
+    # if space.possible():
+    #     print("WARNING: ambiguity in branch", branch.prefix)
+    #     print("Branch intersection:", space)
 
     for condition, bid in sorted_conditions:
         if bid.is_pass():
@@ -409,6 +428,15 @@ def make_condition_space(conditions: List[Condition]) -> IRSpace:
     return space
 
 
+def compile_system(fname: str) -> ir.System:
+    with open(fname) as file:
+        src = file.read()
+
+    tree = parser.parse(src)
+    transformed = CompileTransformer().transform(tree)
+    compiled = build_branch(transformed[0], transformed)
+    result = ir.System(compiled)
+    return result
 
 
 if __name__ == '__main__':
@@ -425,12 +453,14 @@ if __name__ == '__main__':
     """
 
     tree = parser.parse(test)
+    print(tree.pretty())
     res = CompileTransformer().transform(tree)
     if not hasattr(res, "__iter__"):
         res = [res]
     from prettyprinter import pprint
     compiled = build_branch(res[0], res)
     pprint(compiled)
+    LogicSuit.resolve_logical_suits(compiled[9].test.rhs)
     # conditions = res[0].continuations[0].conditions
     # print(make_condition_space(conditions).possible)
     print("done")
