@@ -8,7 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 lark-parser = "^0.9.0"
-opus = {path= "../OPUS"}
+opus = {git="https://github.com:kaszalot01/OPUS.git", rev = "5a76f4765cc403794dc306130355cc3c8402fa85"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.0.2"
