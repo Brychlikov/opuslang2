@@ -14,7 +14,7 @@ import lark
 from opus.lang import ir
 from dataclasses import dataclass, field
 
-from opus.analyzer.spaces import IRSpace
+# from opus.analyzer.spaces import IRSpace
 import random
 
 
@@ -419,13 +419,13 @@ def build_branch(branch: Branch, rest: List[Branch]) -> List[ir.Branch]:
     return result
 
 
-def make_condition_space(conditions: List[Condition]) -> IRSpace:
-    space = IRSpace()
-    for c in conditions:
-        space.apply_expr(c.expr)
-
-    print("conditions finish")
-    return space
+# def make_condition_space(conditions: List[Condition]) -> IRSpace:
+#     space = IRSpace()
+#     for c in conditions:
+#         space.apply_expr(c.expr)
+#
+#     print("conditions finish")
+#     return space
 
 
 def compile_system(fname: str) -> ir.System:
